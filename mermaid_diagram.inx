@@ -15,8 +15,9 @@
     C --> D</param>
             <label>Enter your Mermaid diagram code above (supports multi-line)</label>
             <spacer/>
+            <param name="mermaid_file" type="path" mode="file" gui-text="Mermaid file path:"  filetypes="mmd">C:\path\to\diagram.mmd</param>
             
-            <param name="mermaid_file" type="string" gui-text="Mermaid file path:">C:\path\to\diagram.mmd</param>
+            <!-- <param name="mermaid_file" type="string" gui-text="Mermaid file path:">C:\path\to\diagram.mmd</param> -->
             <label>Only used when 'Load code from file' is checked</label>
         </page>
         

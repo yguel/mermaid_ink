@@ -1,3 +1,6 @@
+
+<div align="center">
+
 # Mermaid Diagram Generator for Inkscape
 
 [![Inkscape](https://img.shields.io/badge/Inkscape-1.0+-blue.svg)](https://inkscape.org/)
@@ -8,6 +11,22 @@
 > **Create beautiful diagrams in Inkscape using Mermaid's simple text-based syntax**
 
 Transform text descriptions into professional flowcharts, sequence diagrams, class diagrams, and more—directly within Inkscape. Perfect for technical documentation, presentations, and design projects.
+
+</div>
+
+
+
+## 📺 Demo
+
+<div align="center">
+
+<!-- Replace VIDEO_ID with your actual YouTube video ID -->
+[![Watch the Demo](https://img.youtube.com/vi/c5Uv4oMwoaA/maxresdefault.jpg)](https://www.youtube.com/watch?v=c5Uv4oMwoaA)
+
+*Click to watch the full tutorial on YouTube*
+
+</div>
+
 
 ---
 

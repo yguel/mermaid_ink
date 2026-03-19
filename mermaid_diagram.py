@@ -91,6 +91,8 @@ class MermaidGenerator(inkex.EffectExtension):
                     mermaid_code = f.read()
             else:
                 mermaid_code = self.options.mermaid_code
+                # Fix for Inkscape passing escaped newlines
+                mermaid_code = mermaid_code.replace('\\n', '\n')
             
             # Clean up the code
             mermaid_code = mermaid_code.strip()

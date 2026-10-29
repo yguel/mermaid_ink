@@ -234,20 +234,47 @@ class MermaidGenerator(inkex.EffectExtension):
 
             inkex.errormsg(traceback.format_exc())
 
-    def check_mermaid_cli(self):
-        """Check if Mermaid CLI is installed."""
+    def probe_mermaid_cli(self):
+        """Run `mmdc --version` once and cache (available, version_tuple).
+
+        version_tuple is (major, minor, patch) or None when the output could
+        not be parsed. The result is cached so the CLI is only spawned once.
+        """
+        if hasattr(self, "_mermaid_cli_probe"):
+            return self._mermaid_cli_probe
+
+        available = False
+        version = None
         try:
             cmd = [self.options.mermaid_cli_path, "--version"]
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=15,
                 shell=True if os.name == "nt" else False,
             )
-            return result.returncode == 0
+            if result.returncode == 0:
+                available = True
+                # mmdc prints a bare semver such as "11.17.0".
+                match = re.search(
+                    r"(\d+)\.(\d+)\.(\d+)", (result.stdout or "") + (result.stderr or "")
+                )
+                if match:
+                    version = tuple(int(part) for part in match.groups())
         except:
-            return False
+            pass
+
+        self._mermaid_cli_probe = (available, version)
+        return self._mermaid_cli_probe
+
+    def check_mermaid_cli(self):
+        """Check if Mermaid CLI is installed."""
+        return self.probe_mermaid_cli()[0]
+
+    def get_mermaid_cli_version(self):
+        """Return the Mermaid CLI version as (major, minor, patch), or None."""
+        return self.probe_mermaid_cli()[1]
 
     def generate_diagram_pdf(self, mermaid_code):
         """Generate diagram as PDF using Mermaid CLI."""
@@ -294,8 +321,19 @@ class MermaidGenerator(inkex.EffectExtension):
         # Create output PDF file path
         pdf_file = os.path.join(temp_dir, "diagram.pdf")
 
-        # Build command - generate PDF; -f fits the PDF page to the diagram bounds.
-        cmd = [self.options.mermaid_cli_path, "-f", "-i", input_file, "-o", pdf_file]
+        # Build command - generate PDF
+        cmd = [self.options.mermaid_cli_path, "-i", input_file, "-o", pdf_file]
+
+        # Fitting the PDF page to the diagram bounds avoids Inkscape importing a
+        # half-cropped diagram. Mermaid CLI < 12 needs "-f" (--pdfFit) for that;
+        # 12.0.0 removed the flag and fits by default (opt out with
+        # --pdf-paper-format). An unknown version is treated as >= 12: passing a
+        # removed option aborts the render outright, whereas omitting it on an
+        # old CLI only leaves extra page margin that Inkscape still crops via
+        # --export-area-drawing.
+        cli_version = self.get_mermaid_cli_version()
+        if cli_version is not None and cli_version[0] < 12:
+            cmd.append("-f")
 
         # Add theme
         if self.options.theme != "default":
@@ -307,10 +345,16 @@ class MermaidGenerator(inkex.EffectExtension):
         elif self.options.background != "white":
             cmd.extend(["-b", self.options.background])
 
-        # Add dimensions (only if fit_to_content is false)
+        # Add dimensions (only if fit_to_content is false).
+        # 12.0.0 also replaced -w/-H with a single --size (max of the two).
         if not self.options.fit_to_content:
-            cmd.extend(["-w", str(self.options.width)])
-            cmd.extend(["-H", str(self.options.height)])
+            if cli_version is not None and cli_version[0] < 12:
+                cmd.extend(["-w", str(self.options.width)])
+                cmd.extend(["-H", str(self.options.height)])
+            else:
+                cmd.extend(
+                    ["--size", str(max(self.options.width, self.options.height))]
+                )
 
         # Add config file if provided
         if self.options.config_file and os.path.exists(self.options.config_file):
